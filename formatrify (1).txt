@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Formatify</title>
+
+<!-- Mammoth for DOCX reading -->
+<script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
+
+<!-- html2pdf for PDF export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<style>
+body {
+  margin: 0;
+  font-family: Georgia, serif;
+  background: #f4f6f8;
+  color: #333;
+}
+
+header {
+  background: white;
+  padding: 20px;
+  border-bottom: 1px solid #ddd;
+  text-align: center;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.container {
+  display: flex;
+  height: calc(100vh - 80px);
+  flex-direction: row;
+}
+
+.sidebar {
+  width: 30%;
+  background: white;
+  padding: 20px;
+  border-right: 1px solid #ddd;
+  box-sizing: border-box;
+}
+
+.preview-area {
+  width: 70%;
+  padding: 30px;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+button {
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+  border: none;
+  background: #2d6cdf;
+  color: white;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+button:hover {
+  background: #1f4fbf;
+}
+
+select, input {
+  width: 100%;
+  padding: 8px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+.book-page {
+  background: white;
+  margin: 0 auto 20px auto;
+  padding: 40px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+  line-height: 1.6;
+  min-height: 600px;
+}
+
+.size-5x8 { width: 500px; }
+.size-55x85 { width: 550px; }
+.size-6x9 { width: 600px; }
+.size-8511 { width: 850px; }
+
+h1 {
+  text-align: center;
+  page-break-before: always;
+}
+</style>
+</head>
+
+<body>
+
+<header>Formatify – Manuscript Formatter</header>
+
+<div class="container">
+  <div class="sidebar">
+
+    <input type="file" id="docxFile" accept=".docx">
+
+    <label>Select Book Size:</label>
+    <select id="bookSize">
+      <option value="size-5x8">5 x 8</option>
+      <option value="size-55x85">5.5 x 8.5</option>
+      <option value="size-6x9">6 x 9</option>
+      <option value="size-8511">8.5 x 11</option>
+    </select>
+
+    <button onclick="formatBook()">Format Manuscript</button>
+    <button onclick="downloadPDF()">Download Print PDF</button>
+
+  </div>
+
+  <div class="preview-area">
+    <div id="preview" class="book-page size-6x9">
+      <p>Upload a DOCX file to start formatting your book.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+let rawHtml = "";
+
+// DOCX upload and conversion
+document.getElementById("docxFile").addEventListener("change", function(event) {
+  let reader = new FileReader();
+  reader.onload = function(event) {
+    mammoth.convertToHtml({arrayBuffer: event.target.result})
+      .then(function(result) {
+        rawHtml = result.value;
+        document.getElementById("preview").innerHTML = rawHtml;
+      });
+  };
+  reader.readAsArrayBuffer(event.target.files[0]);
+});
+
+// Formatting function
+function formatBook() {
+  let preview = document.getElementById("preview");
+  let sizeClass = document.getElementById("bookSize").value;
+
+  preview.className = "book-page " + sizeClass;
+
+  let content = preview.innerHTML;
+
+  // Clean multiple spaces
+  content = content.replace(/\s\s+/g, ' ');
+
+  // Detect chapters
+  content = content.replace(/Chapter\s+\d+/gi, function(match) {
+    return "<h1>" + match + "</h1>";
+  });
+
+  preview.innerHTML = content;
+}
+
+// Download PDF
+function downloadPDF() {
+  const element = document.getElementById("preview");
+  const opt = {
+    margin: 0.5,
+    filename: 'Formatted_Book.pdf',
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+  };
+  html2pdf().set(opt).from(element).save();
+}
+</script>
+
+</body>
+</html>
